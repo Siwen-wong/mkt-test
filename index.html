@@ -9,16 +9,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --surface2: #181818;
-    --border: #242424;
+    --bg: #070709;
+    --surface: #0f0f13;
+    --surface-hover: #16161c;
+    --border: #22222a;
     --accent: #e8ff47;
     --accent2: #ff6b35;
     --accent3: #7b61ff;
-    --text: #f0f0f0;
-    --text-muted: #666;
-    --text-dim: #999;
+    --text: #f0f0f5;
+    --text-muted: #5a5a6a;
+    --text-dim: #9d9dae;
     --font-display: 'Syne', sans-serif;
     --font-mono: 'DM Mono', monospace;
     --font-body: 'DM Sans', sans-serif;
@@ -30,8 +30,17 @@
     background: var(--bg);
     color: var(--text);
     font-family: var(--font-body);
-    min-height: 100vh;
-    overflow-x: hidden;
+    height: 100vh;
+    overflow: hidden; /* App-like fixed screen canvas */
+    user-select: none;
+  }
+
+  /* ── Canvas Background & Particles ── */
+  #canvas-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
   }
 
   /* NOISE OVERLAY */
@@ -42,85 +51,96 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
     pointer-events: none;
     z-index: 9999;
-    opacity: 0.4;
+    opacity: 0.35;
   }
 
-  .screen { display: none; }
-  .screen.active { display: block; }
-
-  /* ── LANDING ── */
-  #screen-landing {
-    min-height: 100vh;
+  /* ── SCREEN SYSTEM ── */
+  .screen {
+    position: absolute;
+    inset: 0;
     display: flex;
     flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: scale(0.98) translateY(10px);
+    z-index: 1;
+    overflow-y: auto;
+  }
+
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: scale(1) translateY(0);
+    z-index: 2;
+  }
+
+  /* Custom Scrollbar for screens */
+  .screen::-webkit-scrollbar { width: 5px; }
+  .screen::-webkit-scrollbar-track { background: transparent; }
+  .screen::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── LANDING SCREEN ── */
+  #screen-landing {
     justify-content: center;
     align-items: center;
     padding: 40px 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .bg-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-    pointer-events: none;
+    text-align: center;
   }
 
   .bg-orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(120px);
+    filter: blur(140px);
     pointer-events: none;
   }
-  .orb1 { width: 500px; height: 500px; background: rgba(232,255,71,0.06); top: -200px; right: -100px; }
-  .orb2 { width: 400px; height: 400px; background: rgba(123,97,255,0.08); bottom: -100px; left: -100px; }
+  .orb1 { width: 550px; height: 550px; background: rgba(232,255,71,0.06); top: -200px; right: -100px; }
+  .orb2 { width: 450px; height: 450px; background: rgba(123,97,255,0.08); bottom: -100px; left: -100px; }
 
   .landing-badge {
     font-family: var(--font-mono);
     font-size: 10px;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--accent);
     border: 1px solid rgba(232,255,71,0.3);
-    padding: 6px 14px;
-    border-radius: 2px;
-    margin-bottom: 40px;
-    animation: fadeUp 0.6s ease both;
+    background: rgba(232,255,71,0.03);
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 32px;
+    box-shadow: 0 0 20px rgba(232,255,71,0.1);
   }
 
   .landing-title {
     font-family: var(--font-display);
-    font-size: clamp(56px, 10vw, 120px);
+    font-size: clamp(64px, 12vw, 130px);
     font-weight: 800;
-    line-height: 0.9;
-    text-align: center;
-    letter-spacing: -0.03em;
-    margin-bottom: 8px;
-    animation: fadeUp 0.6s 0.1s ease both;
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+    margin-bottom: 12px;
+    text-shadow: 0 10px 40px rgba(0,0,0,0.8);
   }
 
-  .landing-title span { color: var(--accent); }
+  .landing-title span { 
+    color: var(--accent);
+    display: inline-block;
+    position: relative;
+  }
 
   .landing-subtitle {
     font-family: var(--font-display);
-    font-size: clamp(18px, 3vw, 28px);
+    font-size: clamp(18px, 3vw, 26px);
     font-weight: 400;
     color: var(--text-dim);
-    text-align: center;
     letter-spacing: -0.01em;
-    margin-bottom: 64px;
-    animation: fadeUp 0.6s 0.2s ease both;
+    margin-bottom: 48px;
+    max-width: 600px;
   }
 
   .landing-meta {
     display: flex;
     gap: 32px;
     margin-bottom: 48px;
-    animation: fadeUp 0.6s 0.3s ease both;
   }
 
   .meta-item {
@@ -130,45 +150,40 @@
     font-family: var(--font-mono);
     font-size: 11px;
     color: var(--text-muted);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
   }
 
   .meta-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
     background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
   }
 
   .btn-primary {
     font-family: var(--font-display);
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     background: var(--accent);
     color: #000;
     border: none;
-    padding: 18px 48px;
+    padding: 20px 48px;
     cursor: pointer;
-    border-radius: 2px;
-    transition: all 0.2s;
-    animation: fadeUp 0.6s 0.4s ease both;
+    border-radius: 4px;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
-    overflow: hidden;
+    box-shadow: 0 0 30px rgba(232,255,71,0.25);
   }
 
-  .btn-primary::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.15);
-    opacity: 0;
-    transition: opacity 0.2s;
+  .btn-primary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(232,255,71,0.4);
+    background: #f1ff70;
   }
 
-  .btn-primary:hover::after { opacity: 1; }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(232,255,71,0.3); }
-  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:active { transform: translateY(-1px) scale(0.99); }
 
   .landing-signature {
     position: absolute;
@@ -177,18 +192,14 @@
     transform: translateX(-50%);
     font-family: var(--font-mono);
     font-size: 10px;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
     color: var(--text-muted);
-    white-space: nowrap;
-    animation: fadeUp 0.6s 0.6s ease both;
-    opacity: 0.5;
+    opacity: 0.6;
   }
 
-  /* ── QUESTION SCREEN ── */
+  /* ── TEST SCREEN (SINGLE PAGE CARD-STACK INTERACTION) ── */
   #screen-test {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    justify-content: space-between;
   }
 
   .test-header {
@@ -197,13 +208,16 @@
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid var(--border);
+    background: rgba(7,7,9,0.8);
+    backdrop-filter: blur(12px);
+    z-index: 10;
   }
 
   .test-logo {
     font-family: var(--font-display);
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 800;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
     color: var(--accent);
   }
 
@@ -214,45 +228,84 @@
   }
 
   .progress-bar-wrap {
-    width: 200px;
-    height: 3px;
+    width: 220px;
+    height: 4px;
     background: var(--border);
-    border-radius: 2px;
+    border-radius: 4px;
     overflow: hidden;
   }
 
   .progress-bar-fill {
     height: 100%;
     background: var(--accent);
-    border-radius: 2px;
-    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+    border-radius: 4px;
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 10px var(--accent);
   }
 
   .progress-label {
     font-family: var(--font-mono);
     font-size: 11px;
-    color: var(--text-muted);
-    min-width: 50px;
+    color: var(--text-dim);
+    min-width: 55px;
     text-align: right;
   }
 
-  .test-body {
+  .test-stage {
     flex: 1;
     display: flex;
-    flex-direction: column;
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 60px 40px;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Single Card Slide Box */
+  .card-viewport {
     width: 100%;
+    max-width: 820px;
+    position: relative;
+    min-height: 520px;
+  }
+
+  .q-card {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(30px) scale(0.97);
+    transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .q-card.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0) scale(1);
+  }
+
+  .q-card.exit-left {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-60px) scale(0.95);
+  }
+
+  .q-card.enter-right {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(60px) scale(0.95);
   }
 
   .question-tag {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -261,7 +314,7 @@
   .question-tag::before {
     content: '';
     display: block;
-    width: 24px;
+    width: 20px;
     height: 1px;
     background: var(--accent);
   }
@@ -269,39 +322,39 @@
   .question-scenario {
     font-family: var(--font-body);
     font-size: 13px;
-    font-weight: 300;
-    line-height: 1.7;
+    line-height: 1.6;
     color: var(--text-dim);
-    border-left: 2px solid var(--border);
-    padding-left: 20px;
-    margin-bottom: 32px;
-    font-style: italic;
+    border-left: 2px solid var(--accent3);
+    padding: 10px 0 10px 18px;
+    margin-bottom: 24px;
+    background: rgba(123,97,255,0.03);
+    border-radius: 0 4px 4px 0;
   }
 
   .question-text {
     font-family: var(--font-display);
-    font-size: clamp(20px, 3vw, 28px);
+    font-size: clamp(20px, 2.5vw, 26px);
     font-weight: 700;
-    line-height: 1.3;
+    line-height: 1.35;
     letter-spacing: -0.02em;
-    margin-bottom: 40px;
+    margin-bottom: 28px;
   }
 
   .options-grid {
     display: grid;
-    gap: 12px;
+    gap: 10px;
   }
 
   .option-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    padding: 22px 24px;
+    padding: 16px 20px;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 6px;
     display: flex;
-    align-items: flex-start;
-    gap: 18px;
-    transition: all 0.2s;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     overflow: hidden;
   }
@@ -310,21 +363,23 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(232,255,71,0.04), transparent);
+    background: linear-gradient(90deg, rgba(232,255,71,0.08), transparent);
     opacity: 0;
     transition: opacity 0.2s;
   }
 
   .option-card:hover {
-    border-color: rgba(232,255,71,0.4);
-    transform: translateX(4px);
+    border-color: rgba(232,255,71,0.5);
+    background: var(--surface-hover);
+    transform: translateX(6px);
   }
 
   .option-card:hover::before { opacity: 1; }
 
   .option-card.selected {
     border-color: var(--accent);
-    background: rgba(232,255,71,0.05);
+    background: rgba(232,255,71,0.06);
+    box-shadow: 0 0 15px rgba(232,255,71,0.1);
   }
 
   .option-card.selected::before { opacity: 1; }
@@ -332,99 +387,84 @@
   .option-letter {
     font-family: var(--font-mono);
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
     color: var(--accent);
     border: 1px solid rgba(232,255,71,0.3);
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    border-radius: 2px;
-    letter-spacing: 0.1em;
+    border-radius: 4px;
+    transition: all 0.2s;
   }
 
   .option-card.selected .option-letter {
     background: var(--accent);
     color: #000;
+    box-shadow: 0 0 10px var(--accent);
   }
 
   .option-text {
     font-family: var(--font-body);
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 1.6;
+    font-size: 13px;
+    line-height: 1.5;
     color: var(--text);
-    padding-top: 4px;
   }
 
-  .test-nav {
+  .test-footer {
+    padding: 20px 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 48px;
-    padding-top: 32px;
     border-top: 1px solid var(--border);
+    background: rgba(7,7,9,0.8);
+    backdrop-filter: blur(12px);
+    z-index: 10;
   }
 
   .btn-secondary {
     font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     background: transparent;
     color: var(--text-muted);
     border: 1px solid var(--border);
-    padding: 12px 28px;
+    padding: 12px 24px;
     cursor: pointer;
-    border-radius: 2px;
+    border-radius: 4px;
     transition: all 0.2s;
   }
 
-  .btn-secondary:hover { color: var(--text); border-color: var(--text-dim); }
+  .btn-secondary:hover:not(:disabled) { color: var(--text); border-color: var(--text-dim); }
+  .btn-secondary:disabled { opacity: 0.3; cursor: not-allowed; }
 
   .btn-next {
     font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     background: var(--accent);
     color: #000;
     border: none;
-    padding: 14px 36px;
+    padding: 12px 32px;
     cursor: pointer;
-    border-radius: 2px;
+    border-radius: 4px;
     transition: all 0.2s;
     opacity: 0.3;
     pointer-events: none;
   }
 
   .btn-next.enabled { opacity: 1; pointer-events: all; }
-  .btn-next.enabled:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,255,71,0.3); }
-
-  /* TRANSITION ANIMATION */
-  .question-slide {
-    animation: slideIn 0.35s cubic-bezier(0.4,0,0.2,1) both;
-  }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(32px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  .btn-next.enabled:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(232,255,71,0.3); }
 
   /* ── RESULT SCREEN ── */
   #screen-result {
-    min-height: 100vh;
-    position: relative;
-    overflow: hidden;
+    padding-bottom: 60px;
   }
 
   .result-header {
@@ -433,22 +473,26 @@
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(7,7,9,0.9);
+    backdrop-filter: blur(16px);
+    z-index: 100;
   }
 
   .result-hero {
-    padding: 80px 40px 60px;
+    padding: 60px 40px 40px;
     max-width: 1000px;
     margin: 0 auto;
-    position: relative;
   }
 
   .result-eyebrow {
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.25em;
     text-transform: uppercase;
     color: var(--text-muted);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -464,21 +508,21 @@
 
   .result-archetype-name {
     font-family: var(--font-display);
-    font-size: clamp(40px, 7vw, 88px);
+    font-size: clamp(44px, 8vw, 84px);
     font-weight: 800;
     line-height: 0.95;
     letter-spacing: -0.03em;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
   }
 
   .result-slogan {
     font-family: var(--font-body);
-    font-size: clamp(16px, 2.5vw, 22px);
+    font-size: clamp(18px, 2.5vw, 24px);
     font-weight: 300;
     font-style: italic;
     color: var(--accent);
-    margin-bottom: 60px;
-    max-width: 600px;
+    margin-bottom: 40px;
+    max-width: 650px;
     line-height: 1.4;
   }
 
@@ -491,25 +535,19 @@
     padding: 0 40px;
   }
 
-  @media (max-width: 700px) {
-    .result-grid { grid-template-columns: 1fr; }
-    .result-hero { padding: 40px 24px; }
-    .result-grid { padding: 0 24px; }
-    .section-skills { padding: 0 24px; }
-    .test-body { padding: 40px 24px; }
-    .landing-meta { flex-direction: column; gap: 12px; align-items: center; }
-  }
-
   .result-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: 6px;
     padding: 28px;
+    transition: transform 0.3s;
   }
+
+  .result-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
 
   .result-card-label {
     font-family: var(--font-mono);
-    font-size: 9px;
+    font-size: 10px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--text-muted);
@@ -545,23 +583,124 @@
     font-size: 10px;
     letter-spacing: 0.08em;
     border: 1px solid var(--border);
-    padding: 5px 10px;
-    border-radius: 2px;
+    background: rgba(255,255,255,0.02);
+    padding: 6px 12px;
+    border-radius: 4px;
     color: var(--text-dim);
-    transition: all 0.2s;
   }
 
   .skill-tag.highlight {
     border-color: rgba(232,255,71,0.4);
     color: var(--accent);
+    background: rgba(232,255,71,0.04);
   }
 
   .failure-card {
-    background: rgba(255,107,53,0.05);
-    border: 1px solid rgba(255,107,53,0.2);
+    background: rgba(255,107,53,0.04);
+    border: 1px solid rgba(255,107,53,0.25);
   }
 
-  .failure-card .result-card-label { color: rgba(255,107,53,0.6); }
+  .failure-card .result-card-label { color: rgba(255,107,53,0.8); }
+
+  .score-bar-section {
+    max-width: 1000px;
+    margin: 0 auto 40px;
+    padding: 0 40px;
+  }
+
+  .score-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 20px;
+  }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .score-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    width: 190px;
+    flex-shrink: 0;
+  }
+
+  .score-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .score-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 0;
+  }
+
+  .score-pct {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    width: 40px;
+    text-align: right;
+  }
+
+  .career-path {
+    max-width: 1000px;
+    margin: 0 auto 60px;
+    padding: 0 40px;
+  }
+
+  .path-track {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .path-node {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    border-radius: 6px;
+    position: relative;
+  }
+
+  .path-node.active {
+    background: rgba(232,255,71,0.03);
+    border-color: rgba(232,255,71,0.3);
+  }
+
+  .path-level {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .path-role {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .path-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
 
   .section-skills {
     max-width: 1000px;
@@ -580,30 +719,16 @@
     gap: 12px;
   }
 
-  .section-title span {
-    font-size: 12px;
-    font-weight: 400;
-    font-family: var(--font-mono);
-    color: var(--text-muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
   .next-steps {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
   }
 
-  @media (max-width: 700px) {
-    .next-steps { grid-template-columns: 1fr; }
-    .result-grid { grid-template-columns: 1fr; }
-  }
-
   .next-step-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: 6px;
     padding: 24px;
   }
 
@@ -611,7 +736,7 @@
     font-family: var(--font-mono);
     font-size: 32px;
     font-weight: 300;
-    color: var(--border);
+    color: var(--text-muted);
     line-height: 1;
     margin-bottom: 12px;
   }
@@ -621,14 +746,13 @@
     font-size: 15px;
     font-weight: 700;
     margin-bottom: 12px;
-    letter-spacing: -0.01em;
   }
 
   .step-items {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   .step-items li {
@@ -647,193 +771,50 @@
     font-size: 10px;
   }
 
-  .career-path {
-    max-width: 1000px;
-    margin: 0 auto 80px;
-    padding: 0 40px;
-  }
-
-  .path-track {
-    display: flex;
-    gap: 0;
-    align-items: stretch;
-    margin-top: 24px;
-  }
-
-  .path-node {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 24px;
-    position: relative;
-  }
-
-  .path-node:first-child { border-radius: 3px 0 0 3px; }
-  .path-node:last-child { border-radius: 0 3px 3px 0; }
-
-  .path-node + .path-node {
-    border-left: none;
-  }
-
-  .path-node.active {
-    background: rgba(232,255,71,0.04);
-    border-color: rgba(232,255,71,0.3);
-  }
-
-  .path-level {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-  }
-
-  .path-role {
-    font-family: var(--font-display);
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 8px;
-    letter-spacing: -0.01em;
-  }
-
-  .path-desc {
-    font-size: 12px;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
-
-  .path-arrow {
-    font-size: 16px;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    padding: 0 0;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    width: 0;
-  }
-
-  @media (max-width: 700px) {
-    .path-track { flex-direction: column; }
-    .path-node:first-child { border-radius: 3px 3px 0 0; }
-    .path-node:last-child { border-radius: 0 0 3px 3px; }
-    .path-node + .path-node { border-left: 1px solid var(--border); border-top: none; }
-    .career-path { padding: 0 24px; }
-  }
-
-  .score-bar-section {
-    max-width: 1000px;
-    margin: 0 auto 40px;
-    padding: 0 40px;
-  }
-
-  @media (max-width: 700px) {
-    .score-bar-section { padding: 0 24px; }
-  }
-
-  .score-bars {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    margin-top: 20px;
-  }
-
-  .score-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .score-label {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    color: var(--text-muted);
-    width: 180px;
-    flex-shrink: 0;
-  }
-
-  .score-track {
-    flex: 1;
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .score-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: var(--accent);
-    transition: width 1s cubic-bezier(0.4,0,0.2,1);
-    width: 0;
-  }
-
-  .score-fill.secondary { background: var(--accent3); }
-  .score-fill.tertiary { background: var(--accent2); }
-
-  .score-pct {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-dim);
-    width: 36px;
-    text-align: right;
-  }
-
   .result-footer {
     border-top: 1px solid var(--border);
     padding: 32px 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: gap;
-  }
-
-  .result-footer-text {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    color: var(--text-muted);
-    letter-spacing: 0.1em;
+    max-width: 1000px;
+    margin: 0 auto;
   }
 
   .btn-retake {
     font-family: var(--font-display);
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     background: transparent;
     color: var(--text-dim);
     border: 1px solid var(--border);
-    padding: 10px 24px;
+    padding: 12px 28px;
     cursor: pointer;
-    border-radius: 2px;
+    border-radius: 4px;
     transition: all 0.2s;
   }
 
-  .btn-retake:hover { color: var(--text); border-color: var(--text-dim); }
+  .btn-retake:hover { color: var(--text); border-color: var(--text-dim); background: var(--surface); }
 
-  .archetype-color-A { color: #e8ff47; }
-  .archetype-color-B { color: #7b61ff; }
-  .archetype-color-C { color: #ff6b35; }
-  .archetype-color-D { color: #47ffe8; }
-
-  .accent-bar {
-    display: inline-block;
-    width: 40px;
-    height: 4px;
-    border-radius: 2px;
-    margin-bottom: 20px;
+  @media (max-width: 768px) {
+    .test-header, .test-footer, .result-header, .result-hero, .result-grid, .score-bar-section, .career-path, .section-skills, .result-footer {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+    .result-grid, .next-steps, .path-track { grid-template-columns: 1fr; flex-direction: column; }
+    .card-viewport { min-height: 600px; }
   }
 </style>
 </head>
 <body>
 
+<!-- Interactive Particle Canvas Background -->
+<canvas id="canvas-bg"></canvas>
+
 <!-- ════════════════════════════════ LANDING ════════════════════════════════ -->
 <div id="screen-landing" class="screen active">
-  <div class="bg-grid"></div>
   <div class="bg-orb orb1"></div>
   <div class="bg-orb orb2"></div>
 
@@ -862,10 +843,20 @@
       <div class="progress-bar-wrap">
         <div class="progress-bar-fill" id="progress-fill"></div>
       </div>
-      <div class="progress-label" id="progress-label">0 / 10</div>
+      <div class="progress-label" id="progress-label">1 / 10</div>
     </div>
   </div>
-  <div class="test-body" id="test-body"></div>
+
+  <div class="test-stage">
+    <div class="card-viewport" id="card-viewport">
+      <!-- Question Cards will be injected dynamically -->
+    </div>
+  </div>
+
+  <div class="test-footer">
+    <button class="btn-secondary" id="btn-prev" onclick="prevQuestion()" disabled>← PREV</button>
+    <button class="btn-next" id="btn-next" onclick="nextQuestion()">NEXT →</button>
+  </div>
 </div>
 
 <!-- ════════════════════════════════ RESULT ════════════════════════════════ -->
@@ -879,7 +870,66 @@
 
 <script>
 /* ───────────────────────────────────────────────────────────────
-   DATA
+   PARTICLE CANVAS SYSTEM
+─────────────────────────────────────────────────────────────── */
+const canvas = document.getElementById('canvas-bg');
+const ctx = canvas.getContext('2d');
+let width, height, particles = [];
+
+function resizeCanvas() {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class Particle {
+  constructor() {
+    this.x = Math.random() * width;
+    this.y = Math.random() * height;
+    this.vx = (Math.random() - 0.5) * 0.4;
+    this.vy = (Math.random() - 0.5) * 0.4;
+    this.size = Math.random() * 1.5 + 0.5;
+    this.alpha = Math.random() * 0.4 + 0.1;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (this.x < 0) this.x = width;
+    if (this.x > width) this.x = 0;
+    if (this.y < 0) this.y = height;
+    if (this.y > height) this.y = 0;
+  }
+  draw() {
+    ctx.fillStyle = `rgba(232, 255, 71, ${this.alpha})`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < 45; i++) particles.push(new Particle());
+
+function renderCanvas() {
+  ctx.clearRect(0, 0, width, height);
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.015)';
+  ctx.lineWidth = 1;
+  const step = 60;
+  for (let x = 0; x < width; x += step) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+  }
+  for (let y = 0; y < height; y += step) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+  }
+
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(renderCanvas);
+}
+renderCanvas();
+
+/* ───────────────────────────────────────────────────────────────
+   DATA & QUESTION SET (Full 10 Questions)
 ─────────────────────────────────────────────────────────────── */
 const ARCHETYPES = {
   A: {
@@ -887,21 +937,20 @@ const ARCHETYPES = {
     name: 'The Chaos Alchemist',
     emoji: '🧬',
     color: '#e8ff47',
-    colorClass: 'archetype-color-A',
     slogan: "You don't run campaigns. You detonate cultural moments.",
-    description: `You're the person who looks at a blank brief and sees a universe of possibility. Ideas don't come to you in boardrooms — they come at 11pm, mid-scroll, mid-shower. You work in creative surges, producing 10 concepts where others produce 2, then ruthlessly picking the one that feels true. Your superpower is cultural intuition: you know what'll hit before the data confirms it. You thrive in environments that tolerate ambiguity, reward boldness, and let you ship fast. Your biggest challenge is the space between inspiration and execution — staying in the room long enough to turn a great idea into a great result.`,
+    description: `You're the person who looks at a blank brief and sees a universe of possibility. Ideas don't come to you in boardrooms — they come at 11pm, mid-scroll, mid-shower. You work in creative surges, producing 10 concepts where others produce 2. Your superpower is cultural intuition: you know what'll hit before the data confirms it.`,
     stack: ['Concept ideation', 'Social content creation', 'Brand voice development', 'Trend spotting', 'Platform-native storytelling'],
-    likes: ['Creating organic content series', 'Ideating campaign concepts', 'Scripting short-form video', 'Naming products or features'],
+    likes: ['Creating organic content series', 'Ideating campaign concepts', 'Scripting short-form video', 'Naming products'],
     avoids: ['Detailed performance reporting', 'Long-cycle planning decks', 'Approval-chain coordination', 'Budget reconciliation'],
-    teamRole: 'The creative engine. Generates the raw material — angles, hooks, formats — that the rest of the team refines and distributes.',
-    failure: 'Ships content that looks good but doesn\'t connect to a business goal. Gets bored mid-execution. Moves on before the thing actually works.',
-    tools: ['Figma', 'CapCut', 'Notion', 'Canva', 'TikTok Creator Tools', 'Later', 'Adobe Express'],
-    learn: ['Growth case studies (Duolingo, Elf Cosmetics, Ryanair social)', 'Brand strategy frameworks', 'Platform algorithm psychology', 'Copywriting fundamentals (Ogilvy on Advertising)'],
-    targets: ['Social-first DTC brands', 'Creative agencies', 'Media companies', 'Consumer apps'],
+    teamRole: 'The creative engine. Generates raw material — angles, hooks, formats — that the team refines.',
+    failure: 'Ships content that looks good but doesn\'t connect to business goals. Gets bored mid-execution.',
+    tools: ['Figma', 'CapCut', 'Notion', 'Canva', 'TikTok Creator Tools'],
+    learn: ['Growth case studies', 'Brand strategy frameworks', 'Copywriting fundamentals'],
+    targets: ['Social-first DTC brands', 'Creative agencies', 'Consumer apps'],
     path: [
-      { level: 'Junior', role: 'Content Creator / Social Exec', desc: 'Build volume. Find your voice. Learn what resonates before theorizing why.' },
-      { level: 'Mid', role: 'Creative Strategist', desc: 'Bridge ideas and outcomes. You own the creative brief AND the performance metrics.' },
-      { level: 'Senior', role: 'Head of Creative / Brand Director', desc: 'Define the brand operating system. Hire people who execute what you envision.' },
+      { level: 'Junior', role: 'Content Creator', desc: 'Build volume. Find your voice.' },
+      { level: 'Mid', role: 'Creative Strategist', desc: 'Bridge ideas and outcomes.' },
+      { level: 'Senior', role: 'Head of Creative', desc: 'Define the brand operating system.' }
     ]
   },
   B: {
@@ -909,21 +958,20 @@ const ARCHETYPES = {
     name: 'The Metric Surgeon',
     emoji: '🔬',
     color: '#7b61ff',
-    colorClass: 'archetype-color-B',
     slogan: "You don't guess what works. You already know.",
-    description: `You're the person who opens a campaign dashboard first thing every morning — not because you have to, but because you genuinely want to know. Numbers aren't a chore; they're a language, and you're fluent. You approach marketing like a scientist: form a hypothesis, run the test, kill what doesn't work, double down on what does. You're drawn to problems with measurable answers. Your instinct is always to find the lever. In fast-moving teams, you're the person who spots that the landing page headline is tanking conversions before anyone else notices. Your challenge is learning to act on imperfect data instead of waiting for statistical certainty.`,
-    stack: ['Data analysis & interpretation', 'A/B testing', 'Attribution modeling', 'Paid media optimization', 'Funnel analysis'],
-    likes: ['Performance dashboards', 'Media buying and bid optimization', 'Conversion rate work', 'Email segmentation and testing'],
-    avoids: ['Qualitative research', 'Brand awareness campaigns (no clear metric)', 'Unstructured ideation sessions', 'Long narrative copywriting'],
-    teamRole: 'The truth-teller. Validates or kills ideas based on evidence. Optimizes in-flight campaigns and tells the team where attention should go.',
-    failure: 'Over-optimizes toward measurable proxies (clicks, CTR) while ignoring brand health or user experience. Can kill big swings before they have time to work.',
-    tools: ['GA4', 'SQL', 'Looker / Tableau', 'Meta Ads Manager', 'Google Ads', 'HubSpot', 'Excel / Sheets'],
-    learn: ['Growth hacking case studies', 'Reforge growth programs', 'Andrew Chen\'s essays', 'Lean Analytics (book)', 'Paid social masterclasses'],
-    targets: ['Performance marketing agencies', 'E-commerce / DTC brands', 'SaaS companies (growth teams)', 'Fintech startups'],
+    description: `You open campaign dashboards first thing every morning. Numbers aren't a chore; they're a language. You approach marketing like a scientist: form a hypothesis, run the test, kill what doesn't work, double down on what does.`,
+    stack: ['Data analysis', 'A/B testing', 'Attribution modeling', 'Paid media optimization', 'Funnel analysis'],
+    likes: ['Performance dashboards', 'Media buying', 'Conversion rate work', 'Email segmentation'],
+    avoids: ['Qualitative research', 'Brand campaigns with no clear metric', 'Unstructured ideation'],
+    teamRole: 'The truth-teller. Validates or kills ideas based on evidence.',
+    failure: 'Over-optimizes toward short-term clicks while ignoring brand health.',
+    tools: ['GA4', 'SQL', 'Looker / Tableau', 'Meta Ads Manager', 'Excel'],
+    learn: ['Reforge growth programs', 'Lean Analytics', 'Paid social masterclasses'],
+    targets: ['Performance agencies', 'E-commerce / DTC', 'SaaS scale-ups'],
     path: [
-      { level: 'Junior', role: 'Marketing Analyst / Paid Social Exec', desc: 'Learn the tools. Build dashboards. Understand what each metric actually measures.' },
-      { level: 'Mid', role: 'Growth Marketer / Performance Lead', desc: 'Own a channel P&L. Design and run experiments. Present findings to leadership.' },
-      { level: 'Senior', role: 'VP Growth / Head of Performance', desc: 'Set measurement infrastructure. Allocate budget across channels. Define the growth model.' },
+      { level: 'Junior', role: 'Marketing Analyst', desc: 'Master tools and data models.' },
+      { level: 'Mid', role: 'Growth Marketer', desc: 'Own channel P&L and experiment roadmap.' },
+      { level: 'Senior', role: 'VP Growth', desc: 'Define growth infrastructure and capital allocation.' }
     ]
   },
   C: {
@@ -931,21 +979,20 @@ const ARCHETYPES = {
     name: 'The System Architect',
     emoji: '⚙️',
     color: '#ff6b35',
-    colorClass: 'archetype-color-C',
     slogan: "You're the reason the campaign actually shipped.",
-    description: `You're the person who maps the dependencies before anyone else has thought about them. You think in workflows, timelines, and contingencies. While others debate the concept, you're already building the production schedule. Your value is invisible when things go right (because they always go right when you're involved) and painfully obvious when you're not in the room. You're the connective tissue of a marketing team: you know where every asset is, who's blocked on what, and what needs to happen in which order. You're energized by removing friction. Your challenge is learning to be heard upstream, at the strategy table, not just when the plan is already in motion.`,
-    stack: ['Project & campaign management', 'Vendor and agency coordination', 'Budget tracking', 'Process design', 'Cross-functional communication'],
-    likes: ['Building launch playbooks', 'Coordinating influencer/KOL campaigns', 'Managing creative production pipelines', 'Briefing agencies and tracking deliverables'],
-    avoids: ['Vague open-ended creative briefs', 'Ambiguous ownership', 'Last-minute scope changes without plan updates', 'Blue-sky brainstorms with no output'],
-    teamRole: 'The force multiplier. Makes everyone else on the team more effective by handling the operational complexity they\'d otherwise drown in.',
-    failure: 'Executes the wrong plan perfectly. Gets so focused on delivering the brief that they don\'t flag when the brief itself is wrong.',
-    tools: ['Notion', 'Asana / Monday.com', 'Airtable', 'Slack', 'Google Workspace', 'Loom', 'Smartsheet'],
-    learn: ['Marketing ops fundamentals', 'Influencer campaign management (case studies)', 'Project management certifications (PMP or similar)', 'Agency management best practices'],
-    targets: ['Integrated agencies', 'Brand teams at large FMCG / CPG companies', 'Marketing ops at mid-stage startups', 'In-house teams at platforms'],
+    description: `You map dependencies before anyone else has thought about them. You think in workflows, timelines, and contingencies. You're the connective tissue of a marketing team: you know where every asset is and who's blocked on what.`,
+    stack: ['Project management', 'Vendor coordination', 'Budget tracking', 'Process design'],
+    likes: ['Building launch playbooks', 'Managing creator pipelines', 'Briefing agencies'],
+    avoids: ['Vague open-ended briefs', 'Ambiguous ownership', 'Last-minute scope changes'],
+    teamRole: 'The force multiplier. Makes everyone else effective by handling operational complexity.',
+    failure: 'Executes the wrong plan perfectly. Doesn\'t flag when the strategy itself is flawed.',
+    tools: ['Notion', 'Asana / Monday', 'Airtable', 'Slack', 'Smartsheet'],
+    learn: ['Marketing ops fundamentals', 'Influencer management frameworks', 'PMP certification'],
+    targets: ['Integrated agencies', 'FMCG brand teams', 'Marketing ops at scale-ups'],
     path: [
-      { level: 'Junior', role: 'Marketing Coordinator / Campaign Manager', desc: 'Master the tools. Learn to run a production timeline without dropping any balls.' },
-      { level: 'Mid', role: 'Marketing Ops Manager / Brand Manager', desc: 'Design the processes, not just execute them. Own campaign P&L and vendor relationships.' },
-      { level: 'Senior', role: 'Head of Marketing Ops / COO (Marketing)', desc: 'Build the operating model for the entire marketing function. Hire ops talent. Own the martech stack.' },
+      { level: 'Junior', role: 'Marketing Coordinator', desc: 'Master timelines and asset delivery.' },
+      { level: 'Mid', role: 'Marketing Ops Manager', desc: 'Design scalable team processes.' },
+      { level: 'Senior', role: 'Head of Marketing Ops', desc: 'Build operating models and martech architecture.' }
     ]
   },
   D: {
@@ -953,21 +1000,20 @@ const ARCHETYPES = {
     name: 'The Signal Shaper',
     emoji: '🎯',
     color: '#47ffe8',
-    colorClass: 'archetype-color-D',
-    slogan: "You don't follow the market. You tell the team what the market is about to do.",
-    description: `You're the person who reads the room — not just in meetings, but culturally, competitively, strategically. You synthesize signals others miss: a competitor's pricing change, a shift in audience language, an emerging behavior on a new platform. You think in frameworks and narratives that help teams make better decisions. You're not always the one executing the campaign, but you're often the reason it was aimed at the right target. You thrive in environments where strategy is valued, where "why" matters as much as "how." Your challenge is the bias toward planning over shipping — the best strategists know when to stop thinking and start testing.`,
-    stack: ['Market research & competitive analysis', 'Audience segmentation', 'Go-to-market strategy', 'Positioning and messaging', 'Cross-channel strategy planning'],
-    likes: ['Writing positioning documents', 'Audience and persona research', 'Competitive landscape mapping', 'Campaign strategy briefs', 'Brand architecture projects'],
-    avoids: ['Repetitive execution tasks', 'Granular trafficking and tagging', 'Day-to-day community management', 'Manual data entry or reporting'],
-    teamRole: 'The navigator. Points the team in the right direction, defines what success looks like, and connects individual campaigns to the bigger brand story.',
-    failure: 'Produces beautiful strategy documents that never get implemented. Over-indexes on positioning when the team needs to ship. Analysis paralysis.',
-    tools: ['Notion', 'Miro', 'SEMrush / SimilarWeb', 'Typeform (research)', 'Figma (for frameworks)', 'PowerPoint / Pitch', 'Google Trends'],
-    learn: ['Positioning (April Dunford — Obviously Awesome)', 'Brand strategy fundamentals', 'Jobs-to-be-done framework', 'Competitive intelligence methods', 'GTM strategy case studies'],
-    targets: ['Brand strategy consultancies', 'In-house brand strategy at scale-ups', 'Product marketing at B2B SaaS', 'Management consulting (marketing practice)'],
+    slogan: "You don't follow the market. You tell the team where it's going.",
+    description: `You read the room — culturally, competitively, strategically. You synthesize signals others miss: competitor moves, audience shifts, emerging behavior. You're the reason the team aims at the right target.`,
+    stack: ['Market research', 'Audience segmentation', 'GTM strategy', 'Positioning & messaging'],
+    likes: ['Writing positioning decks', 'Audience research', 'Competitive landscape mapping'],
+    avoids: ['Repetitive execution', 'Granular tagging', 'Day-to-day community moderation'],
+    teamRole: 'The navigator. Points the team in the right direction and defines what success looks like.',
+    failure: 'Produces strategy decks that never get implemented. Analysis paralysis.',
+    tools: ['Miro', 'SEMrush', 'Typeform', 'Figma', 'Google Trends'],
+    learn: ['Positioning frameworks', 'Brand strategy case studies', 'Jobs-to-be-Done theory'],
+    targets: ['Strategy consultancies', 'In-house brand strategy', 'Product Marketing in SaaS'],
     path: [
-      { level: 'Junior', role: 'Marketing Strategy Intern / Research Analyst', desc: 'Build the research muscle. Write decks. Learn to make arguments with data.' },
-      { level: 'Mid', role: 'Brand Strategist / Product Marketing Manager', desc: 'Own the positioning for a product line or campaign. Present to senior stakeholders.' },
-      { level: 'Senior', role: 'Head of Strategy / CMO', desc: 'Define the brand\'s role in culture. Set the 3-year marketing vision. Align the whole team.' },
+      { level: 'Junior', role: 'Research Analyst', desc: 'Build insight muscle and research decks.' },
+      { level: 'Mid', role: 'Brand Strategist / PMM', desc: 'Own product positioning and GTM.' },
+      { level: 'Senior', role: 'Chief Marketing Officer', desc: 'Set long-term brand vision and strategic direction.' }
     ]
   }
 };
@@ -975,389 +1021,363 @@ const ARCHETYPES = {
 const QUESTIONS = [
   {
     q: "You've been handed the brief for a new product launch campaign.",
-    scenario: "It's your first week at a DTC skincare startup. The head of marketing drops a brief on your desk: new SPF serum launching in 6 weeks, $15K budget, target audience is women 24–35. The brief is intentionally light — 'we want this team to bring fresh ideas.' There are no existing brand guidelines. Your manager says: 'Just do something that actually works.'",
+    scenario: "First week at a DTC skincare startup. Brief: new SPF serum launching in 6 weeks, $15K budget. Brief is intentionally light. Manager says: 'Do something that actually works.'",
     prompt: "What's your first move?",
     options: [
-      { letter: 'A', text: "Start creating content immediately — TikTok drafts, moodboards, hook concepts. You need to see what resonates before you can plan anything." },
-      { letter: 'B', text: "Pull competitor ad data from Meta Ad Library and benchmark their CTRs. You want to know what's already working in this space before spending a dollar." },
-      { letter: 'C', text: "Build a campaign production timeline in Notion — asset list, deadlines, approval stages, vendor contacts. You need the infrastructure before anything else." },
-      { letter: 'D', text: "Write a positioning document first: who's the target, what's the core insight, what's the message hierarchy. You won't spend budget without knowing the 'why.'" }
+      { letter: 'A', text: "Start creating content immediately — TikTok drafts, moodboards, hook concepts to see what feels right." },
+      { letter: 'B', text: "Pull competitor ad data from Meta Ad Library to benchmark CTRs and convert existing high-performing formulas." },
+      { letter: 'C', text: "Build a campaign timeline in Notion — asset lists, deadlines, approval stages, vendor contacts." },
+      { letter: 'D', text: "Write a positioning document first: target audience insight and core message hierarchy before spending a dollar." }
     ]
   },
   {
     q: "Your Instagram Reel underperforms badly in the first 48 hours.",
-    scenario: "You scheduled a Reel for a B2C food brand — the hook was strong, the visuals were clean, the caption was punchy. 48 hours later: 200 views, 3 shares, 1 save. Your manager is asking what happened and what you're going to do about it.",
+    scenario: "You posted a key promotional Reel. Clean visuals, strong hook. 48 hours later: 200 views, 3 comments. Your manager asks why.",
     prompt: "How do you respond?",
     options: [
-      { letter: 'A', text: "Re-edit the video with a completely different hook and repost it as a new test. The idea is sound — the execution needs iteration." },
-      { letter: 'B', text: "Pull the retention graph from Instagram Insights. If people dropped in the first 3 seconds, it's a hook problem. If they dropped at 8, it's a pacing problem. Diagnose before changing anything." },
-      { letter: 'C', text: "Coordinate a paid boost immediately through the media buyer, set a $50 test budget, and document what targeting was used so you can replicate the process next time." },
-      { letter: 'D', text: "Step back and ask whether this content type is right for this audience and platform at all. Maybe the problem isn't the video — maybe the channel strategy is off." }
+      { letter: 'A', text: "Cut 3 new variations with different hooks and audio instantly and post them today to test." },
+      { letter: 'B', text: "Analyze retention curves and drop-off rate frame-by-frame against your past top 10% videos." },
+      { letter: 'C', text: "Audit the posting workflow: check hashtags, distribution channels, and ensure cross-platform posting was synced." },
+      { letter: 'D', text: "Re-evaluate the core topic: ask if the message actually matched current consumer sentiment." }
     ]
   },
   {
-    q: "You're managing a KOL collaboration that's running behind schedule.",
-    scenario: "A mid-tier beauty influencer (180K followers) agreed to post about your brand's new launch by Friday. It's Wednesday evening, she hasn't submitted her draft yet, and your activation deadline is tomorrow. Your campaign manager is offline. You have her WhatsApp and email.",
-    prompt: "What do you do?",
+    q: "Budget cuts hit: 40% of campaign funds are slashed mid-quarter.",
+    scenario: "Company revenue targets shifted. Leadership cuts your remaining marketing budget by 40% effective immediately.",
+    prompt: "Where do you adjust first?",
     options: [
-      { letter: 'A', text: "Text her directly with a specific creative suggestion: 'Hey! Totally flexible on format — even a quick 15-sec POV works. Just needs the product in frame by the first 3 seconds.' Make it easy for her to create." },
-      { letter: 'B', text: "Check her last 5 posts for performance patterns. If her engagement rate is under 2%, this might not be worth rushing. Use the delay to decide if you'd even reshare this content." },
-      { letter: 'C', text: "Send a polite but firm reminder with the contractual deadline referenced, CC the agency, and prepare a backup plan (repurpose existing UGC) in case she doesn't deliver." },
-      { letter: 'D', text: "Zoom out: is this specific creator the right activation for this launch? Draft a quick brief to your manager on why a nano-influencer cluster might have been a better strategic choice." }
+      { letter: 'A', text: "Double down on low-cost high-virality organic content formats and scrap paid production." },
+      { letter: 'B', text: "Cut bottom-performing acquisition channels and reallocate remaining budget to top-ROAS ads." },
+      { letter: 'C', text: "Renegotiate vendor deliverables, adjust timeline scope, and keep operations running cleanly." },
+      { letter: 'D', text: "Refine core messaging to target high-intent customer segments rather than broad awareness." }
     ]
   },
   {
-    q: "Your content strategy meeting has stalled and no one can agree.",
-    scenario: "Your team is planning Q3 content for a B2B SaaS brand. The debate has been going for 45 minutes. The product manager wants thought leadership long-form. The designer wants a visual-first social rebrand. Your colleague wants to double down on email. Everyone has data to support their case. No decision has been made.",
+    q: "The team is stuck in a 2-hour brainstorming session with zero consensus.",
+    scenario: "Everyone is talking in circles about the Q4 campaign concept. Time is running out and opinions are completely split.",
     prompt: "How do you break the deadlock?",
     options: [
-      { letter: 'A', text: "Pitch a content experiment: run one piece of each format over the next 2 weeks, see what gets shared, and make the Q3 decision based on real signal." },
-      { letter: 'B', text: "Pull last quarter's analytics and look at which existing content drove the most pipeline. Let the data make the call so the decision is defensible." },
-      { letter: 'C', text: "Propose a decision framework: assess each option against effort, timeline, and alignment with OKRs. Force a vote by end of meeting." },
-      { letter: 'D', text: "Reframe the whole conversation: 'What problem are we actually trying to solve in Q3?' Push the team back to strategy before tactics." }
+      { letter: 'A', text: "Pitch a bold, crazy wild-card idea to break the room's energy and spark fresh excitement." },
+      { letter: 'B', text: "Propose a quick split-test landing page experiment to let actual user data decide." },
+      { letter: 'C', text: "Synthesize key points into 3 clear operational options with pros/cons and force a vote." },
+      { letter: 'D', text: "Refocus everyone on the original customer persona and core problem statement." }
     ]
   },
   {
-    q: "You're assigned to write the email campaign for a product relaunch.",
-    scenario: "A fintech startup is relaunching its mobile app with a cleaner UX and three new features. You've been asked to write a 3-email nurture sequence for existing inactive users — people who downloaded the app 6+ months ago but stopped using it. The goal is reactivation. You have 48 hours to deliver the copy.",
-    prompt: "How do you approach the writing process?",
+    q: "You are given complete freedom to choose your next project.",
+    scenario: "Your team has quarterly 'flex time' to lead any initiative that drives brand value.",
+    prompt: "What project do you take on?",
     options: [
-      { letter: 'A', text: "Open a blank doc and start writing the first email immediately, using gut instinct on what tone would re-hook a lapsed user. You'll refine after you have a draft you believe in." },
-      { letter: 'B', text: "Start by analyzing the user data — what did lapsed users do before they churned? Which feature did they last touch? The segmentation should inform the copy before a word is written." },
-      { letter: 'C', text: "Build the full sequence map first: email 1 objective, email 2 objective, send cadence, subject line A/B tests planned, UTM tracking set up. Structure before words." },
-      { letter: 'D', text: "Write a one-page messaging strategy first: what's the core tension for a lapsed user, what's the reframing we need to accomplish, what's the CTA hierarchy across all three emails." }
+      { letter: 'A', text: "Launch an experimental community mini-series or social account format." },
+      { letter: 'B', text: "Build an automated multi-step conversion funnel and lifecycle email sequence." },
+      { letter: 'C', text: "Rebuild the team's asset library, brief templates, and project tracking system." },
+      { letter: 'D', text: "Conduct comprehensive competitor intelligence research and publish a GTM playbook." }
     ]
   },
   {
-    q: "A campaign you're running is spending budget fast but results are ambiguous.",
-    scenario: "You're running a Meta ads campaign for a DTC supplement brand. Two weeks in, $8K spent, ROAS is 1.8 against a 2.5 target. Your manager wants to know if you should pause, adjust, or stay the course. The campaign is still in learning phase and you have $7K left.",
-    prompt: "What's your recommendation?",
+    q: "A high-profile influencer drops out 24 hours before a major product reveal.",
+    scenario: "The influencer was scheduled to post the anchor video for launch day. They suddenly cancel due to conflict.",
+    prompt: "What is your immediate solution?",
     options: [
-      { letter: 'A', text: "Launch 3 new creative variants immediately. The targeting might be right but the creative could be the blocker. Change the visual variable before anything else." },
-      { letter: 'B', text: "Break down the data by ad set: which audiences are performing above 2.5 ROAS and which are dragging the average down? Pause the underperformers, reallocate budget to winners." },
-      { letter: 'C', text: "Create a decision tree: if ROAS doesn't hit 2.0 by day 18, pause. If it does, adjust bid strategy. Document the criteria so future decisions don't require this conversation." },
-      { letter: 'D', text: "Step back and ask whether the product-market fit assumption in the targeting is correct. If the offer isn't resonating with the audience, creative iteration won't save it." }
+      { letter: 'A', text: "Film an energetic, authentic behind-the-scenes 'emergency' video in-house and post it raw." },
+      { letter: 'B', text: "Shift their reserved budget into paid whitelisting ads on existing creator content." },
+      { letter: 'C', text: "Activate contingency creator contacts from your pre-built backup spreadsheet." },
+      { letter: 'D', text: "Adjust launch narrative emphasis toward press releases and organic community channels." }
     ]
   },
   {
-    q: "You've been asked to present the campaign results to leadership.",
-    scenario: "Last quarter's brand awareness campaign — a 6-week social and OOH push — just wrapped. You have access to all the metrics: impressions, engagement rate, share of voice, website traffic lift, branded search volume. Leadership wants a 15-minute debrief. Some of the results are good. Some aren't.",
-    prompt: "How do you structure your presentation?",
+    q: "How do you evaluate if a campaign was truly 'successful'?",
+    scenario: "A big campaign just concluded. Leadership asks for the final verdict.",
+    prompt: "What metric matters most to you?",
     options: [
-      { letter: 'A', text: "Lead with the most powerful creative moments — the post that went viral, the OOH photo that got reshared. Make the story emotional and concrete before you get to numbers." },
-      { letter: 'B', text: "Open with the metric that matters most to leadership (likely CPM or branded search lift), and build the narrative from the data outward. Numbers first, context second." },
-      { letter: 'C', text: "Structure it as a formal campaign debrief: objectives vs. actuals, budget vs. spend, learnings, and a recommended playbook for next time. Everything documented and templated." },
-      { letter: 'D', text: "Frame the results in the context of the original strategic question: did this campaign move us closer to the brand goal? Interpret the metrics against intent, not just against benchmarks." }
+      { letter: 'A', text: "Cultural buzz: shareability, viral reach, brand conversation, and user sentiment." },
+      { letter: 'B', text: "Hard performance: CAC, ROAS, conversion rate, and net pipeline revenue generated." },
+      { letter: 'C', text: "Execution quality: delivered on schedule, within budget, with zero operational bottlenecks." },
+      { letter: 'D', text: "Strategic positioning: increased market share and audience perception alignment." }
     ]
   },
   {
-    q: "You're onboarding at a new company and need to understand the brand fast.",
-    scenario: "Day 3 at a growing e-commerce brand. You have full access to everything — Notion, Google Drive, past campaign folders, analytics dashboards. Your manager says: 'Spend this week getting up to speed. We need you running the next campaign in 10 days.' No onboarding doc exists.",
-    prompt: "What do you focus on first?",
+    q: "What is your relationship with marketing technology & tools?",
+    scenario: "The team is evaluating your software stack and tool preferences.",
+    prompt: "Which category of tool is your native habitat?",
     options: [
-      { letter: 'A', text: "Dive into the brand's social channels and top-performing content. You learn a brand's voice by absorbing its best creative output, not reading about it." },
-      { letter: 'B', text: "Pull the last 6 months of analytics: best-performing channels, worst-performing channels, conversion rates, average order value. The data tells you where to focus." },
-      { letter: 'C', text: "Map out all existing processes, tools, and workflows. You need to understand the operational infrastructure before you can contribute anything useful." },
-      { letter: 'D', text: "Find the positioning doc, the brand strategy, and any customer research. You need to understand who this brand is for and why before touching any tactics." }
+      { letter: 'A', text: "Creative suites: CapCut, Figma, Canva, TikTok Creator Studio." },
+      { letter: 'B', text: "Analytics & Ad Managers: GA4, Meta Ads Manager, SQL, Looker." },
+      { letter: 'C', text: "Productivity & Workflow: Notion, Asana, Airtable, Zapier." },
+      { letter: 'D', text: "Insight & Research: SEMrush, Miro, Trends, Survey tools." }
     ]
   },
   {
-    q: "You've spotted a cultural moment that could be a major opportunity for your brand.",
-    scenario: "It's Tuesday at 2pm. A meme format is taking off on X and TikTok — it's been running for about 6 hours and is hitting peak velocity. You can see a clear, genuine angle for your brand (a mid-size coffee chain). But your normal approval process takes 24 hours minimum, and this trend will be dead by then.",
-    prompt: "What do you do?",
+    q: "What frustrates you most in a marketing workplace?",
+    scenario: "You're discussing work pet peeves with a colleague.",
+    prompt: "What drives you crazy faster than anything else?",
     options: [
-      { letter: 'A', text: "Make the post yourself and ask for forgiveness later. You have enough brand context to do this right, and the cost of missing the moment outweighs the risk of a small misfire." },
-      { letter: 'B', text: "Check how similar brands have engaged with comparable trends in the past and what their engagement rates looked like. Benchmark before you move." },
-      { letter: 'C', text: "Escalate immediately through the fastest possible approval chain — skip the formal process and get verbal sign-off from your manager in the next 30 minutes." },
-      { letter: 'D', text: "Ask whether this moment actually aligns with where you want the brand to be in culture. Not every trend is worth chasing, even when you could win." }
+      { letter: 'A', text: "Boring, rigid brand guidelines that kill spontaneous, creative ideas." },
+      { letter: 'B', text: "Making decisions based on 'gut feeling' when clear data is available." },
+      { letter: 'C', text: "Disorganization, missing deadlines, vague responsibility, and chaotic file storage." },
+      { letter: 'D', text: "Tactical execution with no clear underlying strategy or market insight." }
     ]
   },
   {
-    q: "You're building a 30-day content plan from scratch.",
-    scenario: "You've just been handed ownership of all content for a D2C wellness brand's Instagram and TikTok accounts. No existing content calendar. No templates. 4K followers, decent engagement. Your manager says: 'Grow this. Show me the plan on Friday.' It's Tuesday.",
-    prompt: "What does your planning process look like?",
+    q: "What is your ultimate career trajectory goal?",
+    scenario: "Looking forward 5 years into your professional growth.",
+    prompt: "Where do you see yourself thriving?",
     options: [
-      { letter: 'A', text: "Start generating content concepts immediately — 20 ideas across formats and angles. You'll reverse-engineer a calendar from the ideas that feel strongest." },
-      { letter: 'B', text: "Look at 5 competitors and 5 non-competitor accounts in adjacent categories. Find the top-performing post formats and identify the patterns." },
-      { letter: 'C', text: "Build the calendar infrastructure first: content categories, posting cadence, asset specs per platform, approval stages, and a brief template for each content type." },
-      { letter: 'D', text: "Write a one-page social strategy before any content planning: what's the account's role, who is the audience, what do we want them to feel, what's the growth thesis." }
+      { letter: 'A', text: "Head of Creative / Creative Director pushing cultural boundaries." },
+      { letter: 'B', text: "VP of Growth / Chief Growth Officer driving revenue engine scale." },
+      { letter: 'C', text: "Head of Marketing Operations / Managing Director ensuring flawless delivery." },
+      { letter: 'D', text: "Chief Marketing Officer / Chief Officer of Strategy steering company vision." }
     ]
   }
 ];
 
 /* ───────────────────────────────────────────────────────────────
-   STATE
+   STATE MANAGEMENT & INTERACTION ENGINE
 ─────────────────────────────────────────────────────────────── */
-let current = 0;
-let answers = [];      // each entry: archetype key string ('A'|'B'|'C'|'D')
-let selected = null;   // currently selected display index (0-3)
-let shuffleMap = [];   // per-question: shuffleMap[q] = [archetypeKey, ...] in display order
+let currentQuestion = 0;
+let answers = Array(QUESTIONS.length).fill(null);
 
-/* ───────────────────────────────────────────────────────────────
-   SHUFFLE HELPER
-   Generates a per-question random display order, seeded once at
-   test start so back-navigation shows the same order.
-─────────────────────────────────────────────────────────────── */
-function shuffleArray(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function buildShuffleMaps() {
-  // Archetype order in QUESTIONS data is always A, B, C, D
-  // shuffleMap[i] = array of archetype keys in the random display order for question i
-  shuffleMap = QUESTIONS.map(() => shuffleArray(['A', 'B', 'C', 'D']));
-}
-
-/* ───────────────────────────────────────────────────────────────
-   NAVIGATION
-─────────────────────────────────────────────────────────────── */
-function show(id) {
+function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
-  window.scrollTo(0,0);
+  document.getElementById(id).classList.add('active');
 }
 
 function startTest() {
-  current = 0;
-  answers = [];
-  selected = null;
-  buildShuffleMaps();
-  show('test');
-  renderQuestion();
+  currentQuestion = 0;
+  answers = Array(QUESTIONS.length).fill(null);
+  renderCardStack();
+  showScreen('screen-test');
+  updateQuestionState();
 }
 
-/* ───────────────────────────────────────────────────────────────
-   RENDER QUESTION
-   Display letters are purely cosmetic (A/B/C/D in display order).
-   Each rendered option carries a data-archetype attribute for scoring.
-─────────────────────────────────────────────────────────────── */
-function renderQuestion() {
-  const q = QUESTIONS[current];
-  selected = null;
+function renderCardStack() {
+  const viewport = document.getElementById('card-viewport');
+  viewport.innerHTML = '';
 
-  const fill = ((current) / QUESTIONS.length) * 100;
-  document.getElementById('progress-fill').style.width = fill + '%';
-  document.getElementById('progress-label').textContent = `${current} / ${QUESTIONS.length}`;
+  QUESTIONS.forEach((q, idx) => {
+    const card = document.createElement('div');
+    card.className = `q-card ${idx === 0 ? 'active' : ''}`;
+    card.id = `q-card-${idx}`;
 
-  // Build display-order options using this question's shuffle map
-  // shuffleMap[current] = ['C','A','D','B'] (example) — archetype keys in display order
-  const displayLetters = ['A', 'B', 'C', 'D'];
-  const archetypeOrder = shuffleMap[current]; // e.g. ['C','A','D','B']
-
-  // Original QUESTIONS options are stored in fixed order: index 0=A, 1=B, 2=C, 3=D
-  const archetypeIndexMap = { A: 0, B: 1, C: 2, D: 3 };
-
-  const optionsHTML = archetypeOrder.map((archetypeKey, displayIdx) => {
-    const origOption = q.options[archetypeIndexMap[archetypeKey]];
-    return `
-      <div class="option-card" onclick="selectOption(${displayIdx})" id="opt-${displayIdx}" data-archetype="${archetypeKey}">
-        <div class="option-letter">${displayLetters[displayIdx]}</div>
-        <div class="option-text">${origOption.text}</div>
-      </div>
-    `;
-  }).join('');
-
-  const html = `
-    <div class="question-slide">
-      <div class="question-tag">Question ${current + 1} of ${QUESTIONS.length}</div>
+    card.innerHTML = `
+      <div class="question-tag">QUESTION ${idx + 1} OF ${QUESTIONS.length}</div>
       <div class="question-scenario">${q.scenario}</div>
-      <div class="question-text">${q.prompt}</div>
+      <div class="question-text">${q.q}</div>
       <div class="options-grid">
-        ${optionsHTML}
-      </div>
-      <div class="test-nav">
-        <button class="btn-secondary" onclick="goBack()" ${current === 0 ? 'style="opacity:0.3;pointer-events:none"' : ''}>← BACK</button>
-        <button class="btn-next" id="btn-next" onclick="nextQuestion()">
-          ${current < QUESTIONS.length - 1 ? 'NEXT →' : 'SEE RESULTS →'}
-        </button>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('test-body').innerHTML = html;
-
-  // If navigating back, restore the previously selected display position
-  if (answers[current] !== undefined) {
-    const prevArchetype = answers[current];
-    const prevDisplayIdx = shuffleMap[current].indexOf(prevArchetype);
-    if (prevDisplayIdx !== -1) selectOption(prevDisplayIdx);
-  }
-}
-
-function selectOption(displayIdx) {
-  selected = displayIdx;
-  document.querySelectorAll('.option-card').forEach((c, idx) => {
-    c.classList.toggle('selected', idx === displayIdx);
-  });
-  document.getElementById('btn-next').classList.add('enabled');
-}
-
-function nextQuestion() {
-  if (selected === null) return;
-  // Resolve selected display position → archetype key via shuffleMap
-  const archetypeKey = shuffleMap[current][selected];
-  answers[current] = archetypeKey; // store archetype key, not display index
-  if (current < QUESTIONS.length - 1) {
-    current++;
-    renderQuestion();
-  } else {
-    showResults();
-  }
-}
-
-function goBack() {
-  if (current === 0) return;
-  current--;
-  renderQuestion(); // renderQuestion re-applies the saved answer visually
-}
-
-/* ───────────────────────────────────────────────────────────────
-   CALCULATE RESULT
-   answers[] now contains archetype keys directly — no index math needed
-─────────────────────────────────────────────────────────────── */
-function showResults() {
-  const scores = { A: 0, B: 0, C: 0, D: 0 };
-  answers.forEach(key => { if (scores[key] !== undefined) scores[key]++; });
-
-  const winner = Object.entries(scores).sort((a,b) => b[1]-a[1])[0][0];
-  const archetype = ARCHETYPES[winner];
-
-  const total = answers.length;
-  const pcts = {};
-  Object.keys(scores).forEach(k => pcts[k] = Math.round((scores[k] / total) * 100));
-
-  renderResult(archetype, pcts);
-  show('result');
-
-  setTimeout(() => {
-    Object.keys(pcts).forEach(k => {
-      const el = document.getElementById(`score-bar-${k}`);
-      if (el) el.style.width = pcts[k] + '%';
-    });
-  }, 300);
-}
-
-/* ───────────────────────────────────────────────────────────────
-   RENDER RESULT
-─────────────────────────────────────────────────────────────── */
-function renderResult(a, pcts) {
-  const scoreColorClass = (k) => {
-    if (k === a.id) return '';
-    return k === 'B' ? 'secondary' : k === 'C' ? 'tertiary' : '';
-  };
-
-  const html = `
-    <!-- HERO -->
-    <div class="result-hero">
-      <div class="result-eyebrow">YOUR ARCHETYPE</div>
-      <div class="accent-bar" style="background:${a.color}"></div>
-      <div class="result-archetype-name" style="color:${a.color}">${a.emoji} ${a.name}</div>
-      <div class="result-slogan">"${a.slogan}"</div>
-    </div>
-
-    <!-- SCORE BARS -->
-    <div class="score-bar-section">
-      <div class="section-title">DNA Breakdown <span>YOUR PROFILE MIX</span></div>
-      <div class="score-bars">
-        ${Object.entries(ARCHETYPES).map(([k, arch]) => `
-          <div class="score-row">
-            <div class="score-label">${arch.emoji} ${arch.name}</div>
-            <div class="score-track">
-              <div class="score-fill ${scoreColorClass(k)}" id="score-bar-${k}"></div>
-            </div>
-            <div class="score-pct">${pcts[k]}%</div>
+        ${q.options.map((opt, oIdx) => `
+          <div class="option-card" data-letter="${opt.letter}" onclick="selectOption(${idx}, '${opt.letter}')">
+            <div class="option-letter">${opt.letter}</div>
+            <div class="option-text">${opt.text}</div>
           </div>
         `).join('')}
       </div>
+    `;
+    viewport.appendChild(card);
+  });
+}
+
+function selectOption(qIdx, letter) {
+  answers[qIdx] = letter;
+  const card = document.getElementById(`q-card-${qIdx}`);
+  card.querySelectorAll('.option-card').forEach(opt => {
+    if (opt.dataset.letter === letter) {
+      opt.classList.add('selected');
+    } else {
+      opt.classList.remove('selected');
+    }
+  });
+
+  document.getElementById('btn-next').classList.add('enabled');
+
+  // Auto-advance after brief delay for crisp UX
+  setTimeout(() => {
+    if (currentQuestion < QUESTIONS.length - 1) {
+      nextQuestion();
+    } else {
+      finishTest();
+    }
+  }, 220);
+}
+
+function updateQuestionState() {
+  const fill = document.getElementById('progress-fill');
+  const label = document.getElementById('progress-label');
+  const pct = ((currentQuestion + 1) / QUESTIONS.length) * 100;
+  fill.style.width = `${pct}%`;
+  label.innerText = `${currentQuestion + 1} / ${QUESTIONS.length}`;
+
+  document.getElementById('btn-prev').disabled = currentQuestion === 0;
+
+  const nextBtn = document.getElementById('btn-next');
+  if (answers[currentQuestion]) {
+    nextBtn.classList.add('enabled');
+  } else {
+    nextBtn.classList.remove('enabled');
+  }
+}
+
+function nextQuestion() {
+  if (currentQuestion >= QUESTIONS.length - 1) {
+    finishTest();
+    return;
+  }
+  
+  const currentCard = document.getElementById(`q-card-${currentQuestion}`);
+  currentCard.className = 'q-card exit-left';
+
+  currentQuestion++;
+  
+  const nextCard = document.getElementById(`q-card-${currentQuestion}`);
+  nextCard.className = 'q-card enter-right';
+  
+  // Force reflow
+  void nextCard.offsetWidth;
+  nextCard.className = 'q-card active';
+
+  updateQuestionState();
+}
+
+function prevQuestion() {
+  if (currentQuestion <= 0) return;
+
+  const currentCard = document.getElementById(`q-card-${currentQuestion}`);
+  currentCard.className = 'q-card enter-right';
+
+  currentQuestion--;
+
+  const prevCard = document.getElementById(`q-card-${currentQuestion}`);
+  prevCard.className = 'q-card exit-left';
+
+  void prevCard.offsetWidth;
+  prevCard.className = 'q-card active';
+
+  updateQuestionState();
+}
+
+function finishTest() {
+  showScreen('screen-result');
+  calculateResult();
+}
+
+/* ───────────────────────────────────────────────────────────────
+   RESULT CALCULATOR & RENDER
+─────────────────────────────────────────────────────────────── */
+function calculateResult() {
+  const counts = { A: 0, B: 0, C: 0, D: 0 };
+  answers.forEach(a => { if (a && counts[a] !== undefined) counts[a]++; });
+
+  let primary = 'A';
+  let max = -1;
+  Object.keys(counts).forEach(k => {
+    if (counts[k] > max) {
+      max = counts[k];
+      primary = k;
+    }
+  });
+
+  const archetype = ARCHETYPES[primary];
+  const container = document.getElementById('result-content');
+
+  const total = QUESTIONS.length;
+  const scoreA = Math.round((counts.A / total) * 100);
+  const scoreB = Math.round((counts.B / total) * 100);
+  const scoreC = Math.round((counts.C / total) * 100);
+  const scoreD = Math.round((counts.D / total) * 100);
+
+  container.innerHTML = `
+    <div class="result-hero">
+      <div class="result-eyebrow">YOUR PRIMARY MARKETING ARCHETYPE</div>
+      <h1 class="result-archetype-name" style="color: ${archetype.color}">${archetype.emoji} ${archetype.name}</h1>
+      <p class="result-slogan">${archetype.slogan}</p>
     </div>
 
-    <!-- MAIN CARDS -->
+    <!-- Score Breakdown Bar Chart -->
+    <div class="score-bar-section">
+      <div class="section-title">DNA Breakdown <span>/ Spectrum Analysis</span></div>
+      <div class="score-bars">
+        <div class="score-row">
+          <div class="score-label">A. Chaos Alchemist (Creative)</div>
+          <div class="score-track"><div class="score-fill" id="bar-A" style="background:${ARCHETYPES.A.color}"></div></div>
+          <div class="score-pct">${scoreA}%</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">B. Metric Surgeon (Growth)</div>
+          <div class="score-track"><div class="score-fill" id="bar-B" style="background:${ARCHETYPES.B.color}"></div></div>
+          <div class="score-pct">${scoreB}%</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">C. System Architect (Ops)</div>
+          <div class="score-track"><div class="score-fill" id="bar-C" style="background:${ARCHETYPES.C.color}"></div></div>
+          <div class="score-pct">${scoreC}%</div>
+        </div>
+        <div class="score-row">
+          <div class="score-label">D. Signal Shaper (Strategy)</div>
+          <div class="score-track"><div class="score-fill" id="bar-D" style="background:${ARCHETYPES.D.color}"></div></div>
+          <div class="score-pct">${scoreD}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Cards Grid -->
     <div class="result-grid">
-      <div class="result-card" style="grid-column: 1 / -1">
-        <div class="result-card-label">Career Profile</div>
-        <p>${a.description}</p>
+      <div class="result-card">
+        <div class="result-card-label">Core Profile</div>
+        <p>${archetype.description}</p>
       </div>
 
       <div class="result-card">
-        <div class="result-card-label">Core Capability Stack</div>
+        <div class="result-card-label">Team Role & Value</div>
+        <p>${archetype.teamRole}</p>
+        <div class="result-card-label" style="margin-top:20px">Key Skill Stack</div>
         <div class="skill-tags">
-          ${a.stack.map(s => `<span class="skill-tag highlight">${s}</span>`).join('')}
+          ${archetype.stack.map(s => `<span class="skill-tag highlight">${s}</span>`).join('')}
         </div>
       </div>
 
       <div class="result-card">
-        <div class="result-card-label">Team Role</div>
-        <p>${a.teamRole}</p>
-      </div>
-
-      <div class="result-card">
-        <div class="result-card-label">You're Drawn To</div>
+        <div class="result-card-label">Natural Native Tools</div>
+        <div class="skill-tags" style="margin-bottom:16px">
+          ${archetype.tools.map(t => `<span class="skill-tag">${t}</span>`).join('')}
+        </div>
+        <div class="result-card-label">Thrives When</div>
         <div class="skill-tags">
-          ${a.likes.map(s => `<span class="skill-tag">${s}</span>`).join('')}
+          ${archetype.likes.map(l => `<span class="skill-tag">${l}</span>`).join('')}
         </div>
       </div>
 
       <div class="result-card failure-card">
-        <div class="result-card-label">Failure Mode ⚠</div>
-        <p>${a.failure}</p>
+        <div class="result-card-label">Blind Spot & Pitfalls</div>
+        <p>${archetype.failure}</p>
       </div>
     </div>
 
-    <!-- NEXT STEPS -->
-    <div class="section-skills">
-      <div class="section-title">Your Next Moves <span>ACTIONABLE STEPS</span></div>
-      <div class="next-steps">
-        <div class="next-step-card">
-          <div class="step-num">01</div>
-          <div class="step-title">Master These Tools</div>
-          <ul class="step-items">
-            ${a.tools.map(t => `<li>${t}</li>`).join('')}
-          </ul>
-        </div>
-        <div class="next-step-card">
-          <div class="step-num">02</div>
-          <div class="step-title">Study These</div>
-          <ul class="step-items">
-            ${a.learn.map(t => `<li>${t}</li>`).join('')}
-          </ul>
-        </div>
-        <div class="next-step-card">
-          <div class="step-num">03</div>
-          <div class="step-title">Target These Roles</div>
-          <ul class="step-items">
-            ${a.targets.map(t => `<li>${t}</li>`).join('')}
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <!-- CAREER PATH -->
+    <!-- Career Trajectory Track -->
     <div class="career-path">
-      <div class="section-title">Career Trajectory <span>WHERE THIS GOES</span></div>
+      <div class="section-title">Recommended Path <span>/ Career Trajectory</span></div>
       <div class="path-track">
-        ${a.path.map((p, i) => `
-          <div class="path-node ${i === 0 ? 'active' : ''}">
+        ${archetype.path.map((p, i) => `
+          <div class="path-node ${i === 1 ? 'active' : ''}">
             <div class="path-level">${p.level}</div>
-            <div class="path-role" style="${i === 0 ? 'color:' + a.color : ''}">${p.role}</div>
+            <div class="path-role">${p.role}</div>
             <div class="path-desc">${p.desc}</div>
           </div>
         `).join('')}
       </div>
     </div>
 
-    <!-- FOOTER -->
     <div class="result-footer">
-      <div class="result-footer-text">SIGNAL · MARKETING CAREER INTELLIGENCE · 2026</div>
-      <button class="btn-retake" onclick="startTest()">↺ RETAKE TEST</button>
+      <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted)">SIGNAL INTELLIGENCE · 2026</div>
+      <button class="btn-retake" onclick="startTest()">RETAKE TEST ↺</button>
     </div>
   `;
 
-  document.getElementById('result-content').innerHTML = html;
+  // Animate progress bars
+  setTimeout(() => {
+    document.getElementById('bar-A').style.width = `${scoreA}%`;
+    document.getElementById('bar-B').style.width = `${scoreB}%`;
+    document.getElementById('bar-C').style.width = `${scoreC}%`;
+    document.getElementById('bar-D').style.width = `${scoreD}%`;
+  }, 100);
 }
 </script>
 </body>
